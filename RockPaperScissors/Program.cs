@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 
 namespace RockPaperScissors
 {
@@ -59,6 +61,8 @@ namespace RockPaperScissors
         // list of game records
         public static List<GameRecord> gameRecords = new List<GameRecord>();
 
+        private static readonly string filePath = @"C:\Users\bunchmatt\source\repos\RockPaperScissorsCSharp\RockPaperScissors\test.txt";
+
         private static void Main(string[] args)
         {
             if (args is null)
@@ -110,6 +114,7 @@ namespace RockPaperScissors
                 {
                     PrintIncorrectCommand();
                 }
+
             }
         }
 
@@ -260,12 +265,56 @@ namespace RockPaperScissors
 
         private static void LoadGame()
         {
-            // TODO: load information from text file.
+            _ = new List<string>();
+
+            List<string> lines = File.ReadAllLines(filePath).ToList();
+
+            foreach (string line in lines)
+            {
+                string[] gameRecord = line.Split(' ');
+                Hand playerHand = stringToHand(gameRecord[0]);
+                Hand compHand = stringToHand(gameRecord[1]);
+                string date = gameRecord[2] + " " + gameRecord[3] + " " + gameRecord[4];
+
+                new GameRecord(playerHand, compHand, date);
+            }
+
+            gameRecords.Sort();
+
+            Console.WriteLine(lines.Count + " records added!");
+
+            PrintLineBreak();
+            ShowMainMenu();
         }
 
         private static void SaveGame()
         {
-            // TODO: write information to text file
+            List<string> lines = new List<String>();
+            foreach (GameRecord gameRecord in gameRecords)
+            {
+                lines.Add(gameRecord.ToString());
+            }
+
+            File.WriteAllLines(filePath, lines);
+
+            Console.ReadLine();
+
+            ShowMainMenu();
+        }
+
+        private static Hand stringToHand(string input)
+        {
+            switch (input)
+            {
+                case "Paper":
+                    return new Paper();
+                case "Scissors":
+                    return new Scissors();
+                case "Rock":
+                    return new Rock();
+                default:
+                    return null;
+            }
         }
 
         private static void PrintStats()

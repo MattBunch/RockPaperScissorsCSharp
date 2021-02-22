@@ -9,15 +9,24 @@ namespace RockPaperScissors
         public Hand WinningHand { get; }
         public Hand LosingHand { get; }
         public string TimeOfGame { get; }
-        public GameRecord(Hand winningHand, Hand losingHand)
+        public GameRecord(Hand WinningHand, Hand LosingHand)
         {
-            this.WinningHand = winningHand;
-            this.LosingHand = losingHand;
+            this.WinningHand = WinningHand;
+            this.LosingHand = LosingHand;
 
             DateTime now = DateTime.Now;
             string date = now.GetDateTimeFormats('d')[0];
             string time = now.GetDateTimeFormats('t')[0];
             TimeOfGame = date + " " + time;
+
+            Program.gameRecords.Add(this);
+        }
+
+        public GameRecord(Hand WinningHand, Hand LosingHand, string TimeOfGame)
+        {
+            this.WinningHand = WinningHand;
+            this.LosingHand = LosingHand;
+            this.TimeOfGame = TimeOfGame;
 
             Program.gameRecords.Add(this);
         }
