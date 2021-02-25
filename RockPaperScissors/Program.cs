@@ -4,6 +4,8 @@ using System.IO;
 using System.Linq;
 using System.Data;
 using System.Data.SqlClient;
+using MySql.Data.MySqlClient;
+using System.Globalization;
 
 namespace RockPaperScissors
 {
@@ -20,7 +22,7 @@ namespace RockPaperScissors
         public static string saveGameString = "s: Save Game";
         public static string viewStatsString = "v: View Stats";
         public static string viewGameRecordsString = "r: View Game Records";
-        public static string connectToDatabase = "c: Connect";
+        public static string updateDatabaseString = "u: Update Database";
         public static string quitGameString = "q: Quit";
 
         public static string mainMenuString =
@@ -31,7 +33,7 @@ namespace RockPaperScissors
             saveGameString + "\n" +
             viewStatsString + "\n" +
             viewGameRecordsString + "\n" +
-            connectToDatabase + "\n" +
+            updateDatabaseString + "\n" +
             quitGameString;
 
         // game menu options
@@ -67,7 +69,6 @@ namespace RockPaperScissors
 
         private const string gameRecordsFilePath = @"C:\Users\bunchmatt\source\repos\RockPaperScissorsCSharp\RockPaperScissors\gamerecords.txt";
         private const string gameStatisticsFilePath = @"C:\Users\bunchmatt\source\repos\RockPaperScissorsCSharp\RockPaperScissors\gamestatistics.txt";
-
 
         private static void Main(string[] args)
         {
@@ -112,9 +113,9 @@ namespace RockPaperScissors
                 {
                     PrintGameRecords();
                 }
-                else if (userInput == "c")
+                else if (userInput == "u")
                 {
-                    ConnectToDatabase();
+                    UpdateDatabase();
                 }
                 else if (userInput == "q")
                 {
@@ -124,7 +125,6 @@ namespace RockPaperScissors
                 {
                     PrintIncorrectCommand();
                 }
-
             }
         }
 
@@ -174,11 +174,13 @@ namespace RockPaperScissors
             Hand winningHand = CompareTwoHands(userHand, compHand);
 
             string winningValue;
+            string winner = "";
 
             if (winningHand == null)
             {
                 drawCounter++;
                 Console.WriteLine("Draw!");
+                winner = "Draw";
             }
             else if (winningHand.value == userHand.value && winningHand.value != compHand.value)
             {
@@ -186,6 +188,7 @@ namespace RockPaperScissors
                 winCounter++;
                 Console.WriteLine("Winning value: " + winningValue);
                 Console.WriteLine("You won!");
+                winner = "Player";
             }
             else if (winningHand.value == compHand.value && winningHand.value != userHand.value)
             {
@@ -193,13 +196,14 @@ namespace RockPaperScissors
                 loseCounter++;
                 Console.WriteLine("Winning value: " + winningValue);
                 Console.WriteLine("You lost!");
+                winner = "CPU";
             }
             else
             {
                 Console.WriteLine("Error!");
             }
 
-            new GameRecord(userHand, compHand);
+            new GameRecord(winner, userHand, compHand);
 
             PrintLineBreak();
 
@@ -292,11 +296,12 @@ namespace RockPaperScissors
             foreach (string line in lines)
             {
                 string[] gameRecord = line.Split(' ');
-                Hand playerHand = StringToHand(gameRecord[0]);
-                Hand compHand = StringToHand(gameRecord[1]);
-                string date = gameRecord[2] + " " + gameRecord[3] + " " + gameRecord[4];
+                string winner = gameRecord[0];
+                Hand winningHand = StringToHand(gameRecord[1]);
+                Hand losingHand = StringToHand(gameRecord[2]);
+                string date = gameRecord[3] + " " + gameRecord[4] + " " + gameRecord[5];
 
-                new GameRecord(playerHand, compHand, date);
+                new GameRecord(winner, winningHand, losingHand, date);
             }
 
             Console.WriteLine(lines.Count + " records added!");
@@ -324,7 +329,6 @@ namespace RockPaperScissors
             drawCounter = intLines[9];
 
             Console.WriteLine("Statistics loaded.");
-
         }
 
         private static List<int> StringListToIntList(List<string> input)
@@ -468,14 +472,113 @@ namespace RockPaperScissors
             ShowMainMenu();
         }
 
-        private static void ConnectToDatabase()
+        private static void UpdateDatabase()
         {
+            try
+            {
+                var dbCon = DBConnection.Instance();
+                dbCon.Server = "localhost";
+                dbCon.DatabaseName = "rps";
+                dbCon.UserName = "Test_Name";
+                dbCon.Password = "Test_Password";
+                if (dbCon.IsConnect())
+                {
+                    ReadAllFromDatabase(dbCon, "game_records");
+                }
+                else
+                {
+                    Console.WriteLine("Something went wrong");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+            }
 
+            PrintLineBreak();
+            ShowMainMenu();
         }
 
-        private static string GetConnectionString()
+        private static void ReadAllFromDatabase(DBConnection dbCon, string tableName)
         {
-            return "Data Source=(local);Initial Catalog=RockPaperScissors;Integrated Security=true";
+            string query = "SELECT * FROM " + tableName;
+            Console.WriteLine(dbCon.ToString());
+            var cmd = new MySqlCommand(query, dbCon.Connection);
+            var reader = cmd.ExecuteReader();
+
+            List<string> list = new List<string>();
+            int count = reader.FieldCount;
+
+            while (reader.Read())
+            {
+                for (int i = 0; i < count; i++)
+                {
+                    Console.WriteLine(reader.GetValue(i));
+                }
+
+                list.Add(reader[0].ToString());
+            }
+
+            foreach (string line in list)
+                Console.WriteLine(line);
+
+            dbCon.Close();
+        }
+
+        public static void InsertRecord(GameRecord gameRecord)
+        {
+            try
+            {
+                //var dbCon = DBConnection.Instance();
+                //dbCon.Server = "localhost";
+                //dbCon.DatabaseName = "rps";
+                //dbCon.UserName = "Test_Name";
+                //dbCon.Password = "Test_Password";
+
+                DBConnection dbCon = new DBConnection("localhost", "rps", "Test_Name", "Test_Password");
+
+                if (dbCon.IsConnect())
+                {
+                    string winner = gameRecord.Winner;
+                    string winningHand = FirstLetterToUpper(gameRecord.WinningHand.value);
+                    string losingHand = FirstLetterToUpper(gameRecord.LosingHand.value);
+
+                    // FIXME: use this date in the query but get it to work, slight discrepancy between local recorded time and database time
+                    var date = DateTime.ParseExact(gameRecord.TimeOfGame, "dd/MM/yyyy hh:mm:ss", CultureInfo.InvariantCulture);
+                    string dateString = gameRecord.TimeOfGame;
+
+                    Console.WriteLine(dateString);
+
+                    string query = "INSERT INTO `game_records` (`winner`,`winningHand`, `losingHand`, `datePlayed`) VALUES ('" + winner + "','" + winningHand + "','" + losingHand + "', current_timestamp())";
+                    //string query = "INSERT INTO `game_records` (`winner`,`winningHand`, `losingHand`, `datePlayed`) VALUES ('" + winner + "','" + winningHand + "','" + losingHand + "', '" + dateString + "')";
+
+
+                    MySqlCommand queryCommand = new MySqlCommand(query, dbCon.Connection);
+
+                    MySqlDataReader reader = queryCommand.ExecuteReader();
+
+                    while (reader.Read())
+                    {
+                    }
+
+                    Console.WriteLine("Game record inserted to database.");
+
+                    dbCon.Close();
+                }
+                else
+                {
+                    Console.WriteLine("Something went wrong");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+            }
+        }
+
+        private static DBConnection GetDBConnection()
+        {
+            return new DBConnection();
         }
 
         private static void QuitGame()
