@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Data;
+using System.Data.SqlClient;
 
 namespace RockPaperScissors
 {
@@ -18,6 +20,7 @@ namespace RockPaperScissors
         public static string saveGameString = "s: Save Game";
         public static string viewStatsString = "v: View Stats";
         public static string viewGameRecordsString = "r: View Game Records";
+        public static string connectToDatabase = "c: Connect";
         public static string quitGameString = "q: Quit";
 
         public static string mainMenuString =
@@ -28,6 +31,7 @@ namespace RockPaperScissors
             saveGameString + "\n" +
             viewStatsString + "\n" +
             viewGameRecordsString + "\n" +
+            connectToDatabase + "\n" +
             quitGameString;
 
         // game menu options
@@ -107,6 +111,10 @@ namespace RockPaperScissors
                 else if (userInput == "r")
                 {
                     PrintGameRecords();
+                }
+                else if (userInput == "c")
+                {
+                    ConnectToDatabase();
                 }
                 else if (userInput == "q")
                 {
@@ -458,6 +466,16 @@ namespace RockPaperScissors
             PrintLineBreak();
 
             ShowMainMenu();
+        }
+
+        private static void ConnectToDatabase()
+        {
+
+        }
+
+        private static string GetConnectionString()
+        {
+            return "Data Source=(local);Initial Catalog=RockPaperScissors;Integrated Security=true";
         }
 
         private static void QuitGame()
