@@ -61,7 +61,9 @@ namespace RockPaperScissors
         // list of game records
         public static List<GameRecord> gameRecords = new List<GameRecord>();
 
-        private static readonly string filePath = @"C:\Users\bunchmatt\source\repos\RockPaperScissorsCSharp\RockPaperScissors\test.txt";
+        private const string gameRecordsFilePath = @"C:\Users\bunchmatt\source\repos\RockPaperScissorsCSharp\RockPaperScissors\gamerecords.txt";
+        private const string gameStatisticsFilePath = @"C:\Users\bunchmatt\source\repos\RockPaperScissorsCSharp\RockPaperScissors\gamestatistics.txt";
+
 
         private static void Main(string[] args)
         {
@@ -104,7 +106,7 @@ namespace RockPaperScissors
                 }
                 else if (userInput == "r")
                 {
-                    ViewGameRecords();
+                    PrintGameRecords();
                 }
                 else if (userInput == "q")
                 {
@@ -265,56 +267,121 @@ namespace RockPaperScissors
 
         private static void LoadGame()
         {
-            _ = new List<string>();
+            LoadGameRecords();
 
-            List<string> lines = File.ReadAllLines(filePath).ToList();
-
-            foreach (string line in lines)
-            {
-                string[] gameRecord = line.Split(' ');
-                Hand playerHand = stringToHand(gameRecord[0]);
-                Hand compHand = stringToHand(gameRecord[1]);
-                string date = gameRecord[2] + " " + gameRecord[3] + " " + gameRecord[4];
-
-                new GameRecord(playerHand, compHand, date);
-            }
-
-            gameRecords.Sort();
-
-            Console.WriteLine(lines.Count + " records added!");
+            LoadStatistics();
 
             PrintLineBreak();
             ShowMainMenu();
         }
 
-        private static void SaveGame()
+        private static void LoadGameRecords()
         {
-            List<string> lines = new List<String>();
-            foreach (GameRecord gameRecord in gameRecords)
+            _ = new List<string>();
+
+            List<string> lines = File.ReadAllLines(gameRecordsFilePath).ToList();
+
+            foreach (string line in lines)
             {
-                lines.Add(gameRecord.ToString());
+                string[] gameRecord = line.Split(' ');
+                Hand playerHand = StringToHand(gameRecord[0]);
+                Hand compHand = StringToHand(gameRecord[1]);
+                string date = gameRecord[2] + " " + gameRecord[3] + " " + gameRecord[4];
+
+                new GameRecord(playerHand, compHand, date);
             }
 
-            File.WriteAllLines(filePath, lines);
+            Console.WriteLine(lines.Count + " records added!");
+        }
 
-            Console.ReadLine();
+        private static void LoadStatistics()
+        {
+            PrintLineBreak();
+
+            List<string> lines = File.ReadAllLines(gameStatisticsFilePath).ToList();
+            List<int> intLines = StringListToIntList(lines);
+
+            gamesCounter = intLines[0];
+
+            playerPaperCounter = intLines[1];
+            playerScissorsCounter = intLines[2];
+            playerRockCounter = intLines[3];
+
+            compPaperCounter = intLines[4];
+            compScissorsCounter = intLines[5];
+            compRockCounter = intLines[6];
+
+            winCounter = intLines[7];
+            loseCounter = intLines[8];
+            drawCounter = intLines[9];
+
+            Console.WriteLine("Statistics loaded.");
+
+        }
+
+        private static List<int> StringListToIntList(List<string> input)
+        {
+            List<int> output = new List<int>();
+
+            foreach (string line in input)
+                output.Add(int.Parse(line));
+
+            return output;
+        }
+
+        private static void SaveGame()
+        {
+            SaveGameRecords();
+
+            SaveGameStatistics();
 
             ShowMainMenu();
         }
 
-        private static Hand stringToHand(string input)
+        private static void SaveGameRecords()
         {
-            switch (input)
+            List<string> lines = new List<string>();
+            foreach (GameRecord gameRecord in gameRecords)
+                lines.Add(gameRecord.ToString());
+
+            File.WriteAllLines(gameRecordsFilePath, lines);
+
+            Console.WriteLine(lines.Count + " records saved!");
+        }
+
+        private static void SaveGameStatistics()
+        {
+            List<string> lines = new List<string>
             {
-                case "Paper":
-                    return new Paper();
-                case "Scissors":
-                    return new Scissors();
-                case "Rock":
-                    return new Rock();
-                default:
-                    return null;
-            }
+                gamesCounter.ToString(),
+
+                playerPaperCounter.ToString(),
+                playerScissorsCounter.ToString(),
+                playerRockCounter.ToString(),
+
+                compPaperCounter.ToString(),
+                compScissorsCounter.ToString(),
+                compRockCounter.ToString(),
+
+                winCounter.ToString(),
+                loseCounter.ToString(),
+                drawCounter.ToString()
+            };
+
+            File.WriteAllLines(gameStatisticsFilePath, lines);
+
+            Console.WriteLine("Statistics saved.");
+        }
+
+        private static Hand StringToHand(string input)
+        {
+            return input switch
+            {
+                "Paper" => new Paper(),
+                "Scissors" => new Scissors(),
+                "Rock" => new Rock(),
+                _ => null,
+            };
         }
 
         private static void PrintStats()
@@ -372,7 +439,7 @@ namespace RockPaperScissors
             return "";
         }
 
-        private static void ViewGameRecords()
+        private static void PrintGameRecords()
         {
             PrintLineBreak();
 
